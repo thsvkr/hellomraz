@@ -608,6 +608,7 @@ const latestExcerpt = latestPost
     // Restore state from localStorage every init (DOM may have been swapped)
     const collapsed = localStorage.getItem('hellomraz-videos-collapsed') !== '0';
     strip.classList.toggle('videos-collapsed', collapsed);
+    strip.classList.add('videos-drawer-ready');
     toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
 
     // Idempotent click binding — guard against double init (module eval + astro:page-load)
