@@ -190,22 +190,66 @@ const telegramHref = getSiteLinkHref(TELEGRAM_LINK, base);
 
   @media (max-width: 640px) {
     .page-header {
-      flex-direction: column;
-      align-items: stretch;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 0.75rem;
     }
 
     .header-left {
-      display: flex;
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      grid-template-areas:
+        'menu search'
+        'date date';
       align-items: center;
       gap: 0.5rem;
-      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .mobile-menu-btn {
+      grid-area: menu;
+    }
+
+    .header-search {
+      grid-area: search;
+      min-width: 0;
+    }
+
+    :global(.date-selector) {
+      display: flex;
+      grid-area: date;
+      flex-wrap: nowrap;
+      min-width: 0;
+      overflow-x: auto;
+      padding-bottom: 0.125rem;
+      scrollbar-width: none;
+    }
+
+    :global(.date-selector)::-webkit-scrollbar,
+    .header-actions::-webkit-scrollbar {
+      display: none;
+    }
+
+    :global(.ds-label),
+    :global(.ds-sep) {
+      display: none;
+    }
+
+    :global(.ds-select),
+    :global(.ds-go-btn),
+    :global(.ds-tag-picker) {
+      flex: 0 0 auto;
     }
 
     .header-actions {
       justify-content: flex-start;
       gap: 0.5rem;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 0.125rem;
+      scrollbar-width: none;
     }
 
     .header-actions > * + *::before {

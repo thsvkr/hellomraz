@@ -20,7 +20,7 @@ A static music review blog built with [Astro](https://astro.build) for [Опус
 
 ## Stack
 
-- **Astro 5** — static site generation, routing, layouts
+- **Astro 7** — static site generation, routing, layouts
 - **TypeScript** — typed utilities and content helpers
 - **Tailwind CSS 3** — layout and utility styling
 - **CSS custom properties** — theme system and component styling
@@ -33,8 +33,11 @@ A static music review blog built with [Astro](https://astro.build) for [Опус
 ```bash
 npm install
 npm run dev
+npm run verify
+npm test
 npm run build
 npm run preview
+npm run test:e2e
 ```
 
 ## Project structure

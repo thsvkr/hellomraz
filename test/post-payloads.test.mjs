@@ -9,7 +9,7 @@ import {
 } from '../src/lib/post-payloads.mjs';
 
 const post = {
-  slug: 'artist-album',
+  id: 'artist-album',
   data: {
     title: 'Artist - Album Name',
     pubDate: new Date('2026-03-06T00:00:00.000Z'),

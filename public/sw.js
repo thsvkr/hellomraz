@@ -1,5 +1,5 @@
 const CACHE_NAME = 'hellomraz-runtime-v1';
-const CORE_FILES = ['', 'manifest.webmanifest', 'pwa-192.png', 'pwa-512.png'];
+const CORE_FILES = ['', 'offline.html', 'manifest.webmanifest', 'pwa-192.png', 'pwa-512.png'];
 
 function getScopeUrl(path = '') {
   return new URL(path, self.registration.scope).toString();
@@ -67,7 +67,7 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
 
         if (request.mode === 'navigate') {
-          return caches.match(getScopeUrl());
+          return caches.match(getScopeUrl('offline.html'));
         }
 
         throw new Error('Network error');

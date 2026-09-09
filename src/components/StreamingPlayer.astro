@@ -50,7 +50,7 @@ function iframeChromeStyle(service: string): string {
 ---
 
 <div
-  class="streaming-player flex-none w-full md:w-[520px] lg:w-[620px]"
+  class="streaming-player w-full min-w-0"
   data-player-slug={slug}
   data-player-title={title}
   data-player-cover={coverUrl ?? ''}
@@ -472,6 +472,9 @@ function iframeChromeStyle(service: string): string {
 </script>
 
 <style>
+  .streaming-player {
+    container-type: inline-size;
+  }
   .player-controls {
     --player-control-gap: 0.625rem;
     --player-pin-button-width: 5.25rem;
@@ -574,6 +577,7 @@ function iframeChromeStyle(service: string): string {
     width: 100%;
     min-width: 0;
     min-height: 46px;
+    height: 46px;
     padding: 0.625rem 0.5rem;
     border: 1px solid var(--theme-border);
     border-radius: 0.375rem;
@@ -612,7 +616,9 @@ function iframeChromeStyle(service: string): string {
     min-width: 0;
     line-height: 1.1;
     text-align: center;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: normal;
+    word-break: normal;
   }
   .player-stage {
     position: relative;
@@ -653,6 +659,12 @@ function iframeChromeStyle(service: string): string {
     color: var(--theme-text-secondary);
   }
 
+  @container (max-width: 27rem) {
+    .player-service-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
   @media (min-width: 1024px) {
     .player-tab,
     .player-pin-btn {
@@ -676,6 +688,7 @@ function iframeChromeStyle(service: string): string {
     }
     .player-tab {
       min-height: 44px;
+      height: 44px;
       padding-inline: 0.25rem;
       font-size: 0.5625rem;
       letter-spacing: -0.05em;

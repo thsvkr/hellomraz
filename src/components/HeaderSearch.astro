@@ -128,9 +128,10 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
     const list = document.createElement("div");
     list.className = "header-search-list";
 
-    for (const entry of matches) {
+    for (const [index, entry] of matches.entries()) {
       const link = document.createElement("a");
       link.className = "header-search-result";
+      link.dataset.searchResultIndex = String(index);
       link.href = `${base}blog/${entry.slug}`;
 
       const title = document.createElement("span");
@@ -150,6 +151,12 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
     }
 
     resultsEl.appendChild(list);
+
+    const fullSearch = document.createElement('a');
+    fullSearch.className = 'header-search-full-link';
+    fullSearch.href = `${base}search?q=${encodeURIComponent(query.trim())}`;
+    fullSearch.textContent = 'open full search →';
+    resultsEl.appendChild(fullSearch);
   }
 
   function bindHeaderSearch() {
@@ -184,6 +191,7 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
     const base = root.dataset.base || "/";
     let requestId = 0;
     let searchTimer: number | undefined;
+    let selectedIndex = -1;
 
     const floatingSearchResults = createFloatingDropdown({
       getAnchor: () => fieldEl,
@@ -204,15 +212,36 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
     });
 
     function resetResults() {
+      selectedIndex = -1;
       resultsEl.innerHTML = "";
       floatingSearchResults.close();
     }
 
+    function moveSelection(direction: number) {
+      const links = Array.from(
+        resultsEl.querySelectorAll<HTMLAnchorElement>('[data-search-result-index]'),
+      );
+      if (!links.length) return;
+
+      selectedIndex = (selectedIndex + direction + links.length) % links.length;
+      links.forEach((link, index) => {
+        link.setAttribute(
+          'aria-selected',
+          index === selectedIndex ? 'true' : 'false',
+        );
+      });
+      links[selectedIndex].focus();
+    }
+
+    function cancelPendingSearch() {
+      if (!searchTimer) return;
+      window.clearTimeout(searchTimer);
+      searchTimer = undefined;
+    }
+
     function resetSearch() {
       requestId += 1;
-      if (searchTimer) {
-        window.clearTimeout(searchTimer);
-      }
+      cancelPendingSearch();
       input.value = "";
       syncClearButton();
       resetResults();
@@ -220,6 +249,52 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
 
     function syncClearButton() {
       clearBtn.hidden = input.value.length === 0;
+    }
+
+    function getRecentSearches() {
+      const value = localStorage.getItem('hellomraz-recent-searches');
+      if (!value) return [];
+
+      try {
+        const recent = JSON.parse(value);
+        if (!Array.isArray(recent)) return [];
+        return recent.filter((item): item is string => typeof item === 'string');
+      } catch {
+        return [];
+      }
+    }
+
+    function rememberSearch(query: string) {
+      const recent = getRecentSearches();
+      const next = [
+        query,
+        ...recent.filter((item) => item !== query),
+      ].slice(0, 5);
+      localStorage.setItem(
+        'hellomraz-recent-searches',
+        JSON.stringify(next),
+      );
+    }
+
+    function renderRecentSearches() {
+      const recent = getRecentSearches();
+      if (!recent.length) return false;
+      resultsEl.innerHTML = '';
+      const heading = document.createElement('div');
+      heading.className = 'header-search-message';
+      heading.textContent = 'recent searches';
+      resultsEl.appendChild(heading);
+      const list = document.createElement('div');
+      list.className = 'header-search-list';
+      recent.forEach((query) => {
+        const link = document.createElement('a');
+        link.className = 'header-search-result';
+        link.href = `${base}search?q=${encodeURIComponent(query)}`;
+        link.textContent = query;
+        list.appendChild(link);
+      });
+      resultsEl.appendChild(list);
+      return true;
     }
 
     async function findMatches(query: string) {
@@ -253,9 +328,7 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
     }
 
     function scheduleResultsUpdate() {
-      if (searchTimer) {
-        window.clearTimeout(searchTimer);
-      }
+      cancelPendingSearch();
       searchTimer = window.setTimeout(() => {
         void updateResults(input.value);
       }, SEARCH_INPUT_DEBOUNCE_MS);
@@ -263,15 +336,16 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      if (searchTimer) {
-        window.clearTimeout(searchTimer);
-      }
-      const matches = await findMatches(input.value);
+      cancelPendingSearch();
+      const query = input.value.trim();
+      const matches = await findMatches(query);
       const first = matches[0];
+      if (query) rememberSearch(query);
+
       if (first) {
         navigateInternal(`${base}blog/${first.slug}`);
-      } else if (input.value.trim()) {
-        renderResults(resultsEl, [], base, input.value);
+      } else if (query) {
+        renderResults(resultsEl, [], base, query);
         floatingSearchResults.open();
       }
     });
@@ -282,6 +356,8 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
       }
       if (input.value.trim()) {
         void updateResults(input.value);
+      } else if (renderRecentSearches()) {
+        floatingSearchResults.open();
       }
     });
 
@@ -290,7 +366,13 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
     });
 
     input.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        moveSelection(1);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        moveSelection(-1);
+      } else if (event.key === "Escape") {
         resetResults();
         input.blur();
       }
@@ -444,9 +526,23 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
     border-top: none;
   }
   .header-search-result:hover,
-  .header-search-result:focus-visible {
+  .header-search-result:focus-visible,
+  .header-search-result[aria-selected='true'] {
     background: var(--theme-bg-hover);
     color: var(--theme-text-primary);
+    outline: none;
+  }
+  .header-search-full-link {
+    display: block;
+    padding: 0.75rem 0.875rem;
+    border-top: 1px solid var(--theme-border);
+    color: var(--theme-accent);
+    font-size: 0.75rem;
+    text-decoration: none;
+  }
+  .header-search-full-link:hover,
+  .header-search-full-link:focus-visible {
+    background: var(--theme-bg-hover);
     outline: none;
   }
   .header-search-result-title {

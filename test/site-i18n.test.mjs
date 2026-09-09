@@ -18,6 +18,6 @@ test('getSiteCopy returns centralized about page strings', () => {
   const aboutCopy = getSiteCopy('aboutPage', 'en');
 
   assert.equal(aboutCopy.about, '~ about');
-  assert.match(aboutCopy.text, /Drop Your Weapon, Scum/);
+  assert.match(aboutCopy.paragraphs[0], /Drop Your Weapon, Scum/);
   assert.equal(aboutCopy.links, '~ links');
 });

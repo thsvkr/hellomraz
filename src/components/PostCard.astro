@@ -8,9 +8,10 @@ import { getBandcampData } from '../lib/bandcamp';
 interface Props {
   post: CollectionEntry<'blog'>;
   index?: number;
+  excerpt?: string;
 }
 
-const { post, index = 99 } = Astro.props;
+const { post, index = 99, excerpt } = Astro.props;
 const slug = post.id;
 const color = getPostColor(slug);
 const base = (import.meta.env.BASE_URL || '/').replace(/\/?$/, '/');
@@ -27,6 +28,8 @@ const placeholderGradientId = `post-card-gradient-${slug}`;
   href={`${base}blog/${slug}`}
   class="post-card playlist-item"
   data-color={color.dark}
+  data-post-title={post.data.title.toLowerCase()}
+  data-post-date={post.data.pubDate.toISOString()}
 >
   <!-- Square cover art -->
   <div class="post-card-cover">
@@ -77,6 +80,7 @@ const placeholderGradientId = `post-card-gradient-${slug}`;
   <div class="post-card-tags">
     {post.data.tags?.slice(0, 3).join(' · ') ?? ''}
   </div>
+  {excerpt && <p class="post-card-excerpt">{excerpt}</p>}
 </a>
 
 <style is:global>
@@ -84,7 +88,6 @@ const placeholderGradientId = `post-card-gradient-${slug}`;
   .post-card {
     display: flex;
     flex-direction: column;
-    outline: none;
     padding: 0.5rem;
     border: 1px solid var(--theme-border);
     background-color: var(--theme-bg-elevated);
@@ -98,6 +101,10 @@ const placeholderGradientId = `post-card-gradient-${slug}`;
   }
   .post-card:hover {
     border-color: var(--theme-accent);
+  }
+  .post-card:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 3px;
   }
   .post-card-cover {
     position: relative;
@@ -125,19 +132,37 @@ const placeholderGradientId = `post-card-gradient-${slug}`;
     height: 100%;
   }
   .post-card-title {
-    font-weight: 700;
-    font-size: 0.875rem;
+    display: -webkit-box;
+    min-height: 2.5em;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     color: var(--theme-text-primary);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .post-card-excerpt {
+    margin: 0.5rem 0 0;
+    overflow: hidden;
+    color: var(--theme-text-secondary);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
   .post-card-tags {
-    font-size: 0.75rem;
+    display: -webkit-box;
+    min-height: 2.2em;
     margin-top: 0.25rem;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     color: var(--theme-text-muted);
+    font-size: 0.75rem;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 </style>

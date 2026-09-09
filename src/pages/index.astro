@@ -16,23 +16,93 @@ const [dateIndex, morePosts, allVideos] = await Promise.all([
   Promise.resolve(getAllVideos()),
 ]);
 const initialVideos = allVideos.slice(0, VIDEO_STRIP_INITIAL);
+const latestPost = morePosts[0];
+const latestExcerpt = latestPost
+  ? (latestPost.data.description || String(latestPost.body ?? ''))
+      .replace(/[#*_`>\[\]]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 240)
+  : '';
 ---
 
 <Layout title="Home">
-  <div id="playlist-container" class="theme-surface">
-    <PageHeader dateIndex={dateIndex} />
+  <PageHeader dateIndex={dateIndex} />
 
-    {initialVideos.length > 0 && (
-      <div class="videos-strip theme-border" id="home-videos-strip">
-        <!-- Collapsible header -->
-        <div class="videos-strip-header" id="videos-strip-toggle" aria-expanded="true">
+  <div id="playlist-container" class="theme-surface">
+  {morePosts[0] && (
+    <section class="latest-review theme-surface" aria-labelledby="latest-review-heading">
+      <div class="section-heading-row">
+        <h1 id="latest-review-heading" class="text-lg font-bold theme-text-primary">~ latest drop</h1>
+        <span class="text-sm theme-text-muted">{morePosts[0].data.pubDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+      </div>
+      <div class="featured-review">
+        <PostCard post={morePosts[0]} index={0} excerpt={latestExcerpt} />
+      </div>
+    </section>
+  )}
+
+  <section class="reviews-section theme-surface" aria-labelledby="reviews-heading">
+    <div class="reviews-header">
+      <button
+        id="reviews-header-toggle"
+        class="reviews-toggle"
+        type="button"
+        aria-expanded="true"
+        aria-controls="reviews-body"
+      >
+        <h2 id="reviews-heading" class="text-lg font-bold theme-text-primary">~ reviews</h2>
+        <span class="reviews-chevron" aria-hidden="true">▾</span>
+      </button>
+      <a
+        href={`${base}blog`}
+        class="reviews-link text-sm font-medium touch-target-inline theme-text-accent"
+      >
+        see all →
+      </a>
+    </div>
+    <div class="reviews-body" id="reviews-body">
+      <div
+        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3"
+        id="more-reviews-grid"
+        data-base={base}
+      >
+        {morePosts.slice(1).map((post, i) => (
+          <PostCard post={post} index={i + 1} />
+        ))}
+      </div>
+
+      <div class="flex justify-center mt-6" id="load-more-reviews-wrap">
+        <button
+          id="load-more-reviews-btn"
+          class="load-more-reviews-btn"
+          type="button"
+        >
+          load more
+        </button>
+      </div>
+    </div>
+  </section>
+
+  {initialVideos.length > 0 && (
+    <aside class="videos-drawer theme-border" id="home-videos-strip" aria-labelledby="videos-heading">
+      <div class="videos-drawer-tab">
+        <button
+          id="videos-strip-toggle"
+          class="videos-strip-toggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="home-videos-scroll"
+        >
+          <span id="videos-heading">videos</span>
+          <span class="videos-strip-chevron" aria-hidden="true">▾</span>
+        </button>
+      </div>
+      <div class="videos-drawer-panel">
+        <div class="videos-drawer-toolbar">
           <span class="text-lg font-bold theme-text-primary">~ videos</span>
-          <div class="flex items-center gap-2">
-            <a href={`${base}videos`} class="videos-strip-link text-sm font-medium touch-target-inline theme-text-accent">see all →</a>
-            <span class="videos-strip-chevron" aria-hidden="true">▾</span>
-          </div>
+          <a href={`${base}videos`} class="videos-strip-link text-sm font-medium touch-target-inline theme-text-accent">see all →</a>
         </div>
-        <!-- Collapsible body -->
         <div class="videos-strip-body" id="home-videos-scroll">
           {initialVideos.map((v, i) => (
             <a
@@ -49,52 +119,29 @@ const initialVideos = allVideos.slice(0, VIDEO_STRIP_INITIAL);
                   loading={i < 4 ? 'eager' : 'lazy'}
                   decoding="async"
                 />
-                <div class="video-strip-play">▶</div>
+                <div class="video-strip-play" aria-hidden="true">▶</div>
               </div>
               <span class="video-strip-title">{v.title}</span>
             </a>
           ))}
         </div>
       </div>
-    )}
-  </div>
-
-  <div class="reviews-section theme-surface">
-    <div class="reviews-header" id="reviews-header-toggle" aria-expanded="true">
-      <h2 class="text-lg font-bold theme-text-primary">~ reviews</h2>
-      <div class="flex items-center gap-2">
-        <a
-          href={`${base}blog`}
-          class="reviews-link text-sm font-medium touch-target-inline theme-text-accent"
-        >
-          see all →
-        </a>
-        <span class="reviews-chevron" aria-hidden="true">▾</span>
-      </div>
-    </div>
-    <div class="reviews-body" id="reviews-body">
-    <div
-      class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3"
-      id="more-reviews-grid"
-      data-base={base}
-    >
-      {morePosts.map((post, i) => (
-        <PostCard post={post} index={i} />
-      ))}
-    </div>
-
-    <div class="flex justify-center mt-6" id="load-more-reviews-wrap">
-      <button
-        id="load-more-reviews-btn"
-        class="load-more-reviews-btn"
-      >
-        load more
-      </button>
-    </div>
-    </div>
+    </aside>
+  )}
   </div>
 
 </Layout>
+
+<script is:inline>
+  (() => {
+    const drawer = document.getElementById('home-videos-strip');
+    if (!drawer) return;
+
+    const isOpen = localStorage.getItem('hellomraz-videos-collapsed') === '0';
+    drawer.classList.toggle('videos-collapsed', !isOpen);
+    drawer.classList.add('videos-drawer-ready');
+  })();
+</script>
 
 <script>
   interface ReviewPost {
@@ -211,7 +258,71 @@ const initialVideos = allVideos.slice(0, VIDEO_STRIP_INITIAL);
       padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));
     }
   }
-  /* ── Videos horizontal strip
+  .latest-review {
+    padding: 1.5rem 1.5rem 0;
+  }
+  .section-heading-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 72rem;
+    margin: 0 auto 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--theme-border);
+  }
+  .featured-review {
+    max-width: 72rem;
+    margin-inline: auto;
+  }
+  .featured-review :global(.post-card) {
+    display: grid;
+    grid-template-columns: minmax(11rem, 18rem) minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    gap: 0.75rem 1.25rem;
+    padding: 1rem;
+  }
+  .featured-review :global(.post-card-cover) {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    margin-bottom: 0;
+  }
+  .featured-review :global(.post-card-title) {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    min-height: 0;
+    font-size: clamp(1rem, 2vw, 1.5rem);
+    line-height: 1.25;
+    -webkit-line-clamp: 3;
+  }
+  .featured-review :global(.post-card-tags) {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    min-height: 0;
+  }
+  .featured-review :global(.post-card-excerpt) {
+    grid-column: 2;
+    grid-row: 3;
+    align-self: start;
+  }
+  @media (max-width: 639px) {
+    .latest-review {
+      padding-inline: 0.75rem;
+    }
+
+    .featured-review :global(.post-card) {
+      display: flex;
+      gap: 0;
+    }
+
+    .featured-review :global(.post-card-cover) {
+      margin-bottom: 0.75rem;
+    }
+  }
+
+  .load-more-reviews-btn {
     padding: 0.75rem 1.25rem;
     min-height: 44px;
     font-size: 0.875rem;
@@ -222,54 +333,125 @@ const initialVideos = allVideos.slice(0, VIDEO_STRIP_INITIAL);
     cursor: pointer;
     transition: border-color 0.15s, color 0.15s;
   }
-  .load-more-reviews-btn:hover {
+  .load-more-reviews-btn:hover,
+  .load-more-reviews-btn:focus-visible {
     border-color: var(--theme-accent);
     color: var(--theme-accent);
   }
 
-  /* ── Videos horizontal strip (Netflix-style, collapsible) ── */
-  .videos-strip {
-    border-bottom: 1px solid var(--theme-border);
-    padding: 2rem 1.5rem 1rem;
+  /* ── Videos right drawer ── */
+  .videos-drawer {
+    position: fixed;
+    top: 5rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 900;
+    display: flex;
+    width: min(28rem, calc(100vw - 1.5rem));
+    border: 1px solid var(--theme-border);
+    background: var(--theme-bg-surface);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+    transition: transform 0.2s ease;
   }
-  @media (min-width: 640px) {
-    .videos-strip { padding: 2rem 2.5rem 1rem; }
+  .videos-drawer:not(.videos-drawer-ready) {
+    visibility: hidden;
   }
-
-  /* Header — always visible */
-  .videos-strip-header {
+  .videos-drawer.videos-collapsed {
+    transform: translateX(calc(100% - 2.75rem));
+  }
+  @media (max-width: 640px) {
+    .videos-drawer {
+      top: auto;
+      bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+      height: min(70vh, 32rem);
+    }
+  }
+  .videos-drawer-tab {
+    flex: 0 0 2.75rem;
+    border-right: 1px solid var(--theme-border);
+    background: var(--theme-bg-elevated);
+  }
+  .videos-strip-toggle {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 0.5rem;
+    border: 0;
+    background: transparent;
+    color: var(--theme-text-secondary);
+    font: inherit;
+    cursor: pointer;
+  }
+  .videos-strip-toggle > span:first-child {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .videos-drawer-panel {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    padding: 1rem;
+  }
+  .videos-drawer-toolbar,
+  .reviews-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 1rem;
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--theme-border);
-    cursor: pointer;
-    transition: background-color 0.15s;
   }
-  .videos-strip-header:hover {
-    background-color: var(--theme-bg-hover);
-  }
-
-  /* Body — collapsible flex scroll */
-  .videos-strip-body {
+  .reviews-toggle {
     display: flex;
-    gap: 0.75rem;
-    overflow-x: auto;
-    max-height: 600px;
-    transition: max-height 0.25s ease, opacity 0.2s ease;
-    opacity: 1;
-    scrollbar-width: none;
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
   }
-  .videos-strip-body::-webkit-scrollbar { display: none; }
-  .videos-strip-body.videos-collapsed {
-    max-height: 0 !important;
-    opacity: 0;
+  .videos-strip-toggle:hover,
+  .reviews-toggle:hover,
+  .videos-strip-toggle:focus-visible,
+  .reviews-toggle:focus-visible {
+    color: var(--theme-accent);
+  }
+  .videos-strip-toggle:focus-visible,
+  .reviews-toggle:focus-visible,
+  .videos-strip-link:focus-visible,
+  .reviews-link:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 3px;
   }
 
-  /* Toggle header (legacy duplicate — keep selectors for chevron rotation) */
-  #videos-strip-toggle {
-    cursor: pointer;
+  .videos-strip-body {
+    display: grid;
+    flex: 1;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .videos-drawer.videos-collapsed .videos-drawer-panel {
+    visibility: hidden;
   }
 
   /* Chevron */
@@ -282,20 +464,6 @@ const initialVideos = allVideos.slice(0, VIDEO_STRIP_INITIAL);
     transform: rotate(-90deg);
   }
 
-  /* Reviews collapsible header */
-  #reviews-header-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--theme-border);
-    cursor: pointer;
-    transition: background-color 0.15s;
-  }
-  #reviews-header-toggle:hover {
-    background-color: var(--theme-bg-hover);
-  }
   .reviews-chevron {
     font-size: 1.25rem;
     color: var(--theme-text-muted);
@@ -317,15 +485,12 @@ const initialVideos = allVideos.slice(0, VIDEO_STRIP_INITIAL);
   }
 
   .video-strip-card {
-    flex: 0 0 auto;
-    min-width: 280px;
-    max-width: 280px;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
     scroll-snap-align: start;
     text-decoration: none;
     transition: transform 0.15s;
-  }
-  @media (min-width: 640px) {
-    .video-strip-card { min-width: 320px; max-width: 320px; }
   }
   .video-strip-card:hover {
     transform: scale(1.03);
@@ -437,13 +602,12 @@ const initialVideos = allVideos.slice(0, VIDEO_STRIP_INITIAL);
     const strip = document.getElementById('home-videos-strip');
     if (!strip) return;
 
-    const toggle = strip.querySelector('#videos-strip-toggle') as HTMLElement | null;
-    const body = strip.querySelector('.videos-strip-body') as HTMLElement | null;
-    if (!toggle || !body) return;
+    const toggle = strip.querySelector<HTMLButtonElement>('#videos-strip-toggle');
+    if (!toggle) return;
 
     // Restore state from localStorage every init (DOM may have been swapped)
-    const collapsed = localStorage.getItem('hellomraz-videos-collapsed') === '1';
-    body.classList.toggle('videos-collapsed', collapsed);
+    const collapsed = localStorage.getItem('hellomraz-videos-collapsed') !== '0';
+    strip.classList.toggle('videos-collapsed', collapsed);
     toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
 
     // Idempotent click binding — guard against double init (module eval + astro:page-load)
@@ -451,11 +615,8 @@ const initialVideos = allVideos.slice(0, VIDEO_STRIP_INITIAL);
     toggle.dataset.bound = '1';
 
     toggle.addEventListener('click', () => {
-      const t = document.querySelector('#videos-strip-toggle') as HTMLElement | null;
-      const b = document.querySelector('.videos-strip-body') as HTMLElement | null;
-      if (!t || !b) return;
-      const isCollapsed = b.classList.toggle('videos-collapsed');
-      t.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+      const isCollapsed = strip.classList.toggle('videos-collapsed');
+      toggle.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
       localStorage.setItem('hellomraz-videos-collapsed', isCollapsed ? '1' : '0');
     });
   }

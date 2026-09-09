@@ -49,19 +49,30 @@ for (const post of page.data) {
 
     <div class="px-4 sm:px-6 pb-8 safe-bottom-pad">
       <div class="mb-8">
-        <div>
-          <h1 class="text-3xl font-bold mb-2 theme-text-primary">All Reviews</h1>
-          <p class="text-sm theme-text-muted">
-            {page.total} releases
-            {page.lastPage > 1 && <span> · Page {page.currentPage} of {page.lastPage}</span>}
-          </p>
+        <div class="review-list-header">
+          <div>
+            <h1 class="text-3xl font-bold mb-2 theme-text-primary">All Reviews</h1>
+            <p class="text-sm theme-text-muted">
+              {page.total} releases
+              {page.lastPage > 1 && <span> · Page {page.currentPage} of {page.lastPage}</span>}
+            </p>
+          </div>
+          <label class="review-sort-control theme-text-muted">
+            <span>Sort</span>
+            <select data-review-sort>
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="title">Title</option>
+            </select>
+          </label>
         </div>
       </div>
 
+      <div id="review-list">
       {(() => {
         let globalIndex = 0;
         return monthGroups.map((group) => (
-          <section id={`month-${group.key}`} class="mb-8 scroll-mt-4">
+          <section id={`month-${group.key}`} data-month-key={group.key} class="mb-8 scroll-mt-4">
             <h2 class="text-lg font-semibold mb-4 pb-2 border-b theme-text-secondary theme-border">
               {group.label}
             </h2>
@@ -71,6 +82,7 @@ for (const post of page.data) {
           </section>
         ));
       })()}
+      </div>
 
       {page.lastPage > 1 && (
         <Pagination
@@ -82,3 +94,82 @@ for (const post of page.data) {
     </div>
   </div>
 </Layout>
+
+<script>
+  function initReviewSort() {
+    const list = document.getElementById('review-list');
+    const select = document.querySelector<HTMLSelectElement>('[data-review-sort]');
+    if (!list || !select || select.dataset.bound === '1') return;
+    select.dataset.bound = '1';
+
+    const storageKey = 'hellomraz-review-sort';
+    select.value = localStorage.getItem(storageKey) || 'newest';
+
+    function sortByAttribute(elements: HTMLElement[], attribute: string) {
+      const direction = select.value === 'oldest' ? 1 : -1;
+      return elements.sort((left, right) => {
+        const leftValue = left.dataset[attribute] || '';
+        const rightValue = right.dataset[attribute] || '';
+        const comparison = leftValue.localeCompare(rightValue);
+        return select.value === 'title' ? comparison : direction * comparison;
+      });
+    }
+
+    function applySort() {
+      const sections = Array.from(list.querySelectorAll<HTMLElement>(':scope > section'));
+      sortByAttribute(sections, 'monthKey');
+
+      sections.forEach((section) => {
+        const grid = section.querySelector<HTMLElement>('.grid');
+        if (grid) {
+          const attribute = select.value === 'title' ? 'postTitle' : 'postDate';
+          const cards = sortByAttribute(Array.from(grid.children) as HTMLElement[], attribute);
+          cards.forEach((card) => grid.appendChild(card));
+        }
+        list.appendChild(section);
+      });
+    }
+
+    select.addEventListener('change', () => {
+      localStorage.setItem(storageKey, select.value);
+      applySort();
+    });
+    applySort();
+  }
+
+  document.addEventListener('astro:page-load', initReviewSort);
+  initReviewSort();
+</script>
+
+<style>
+  .review-list-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .review-sort-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+  }
+  .review-sort-control select {
+    min-height: 40px;
+    padding: 0.5rem;
+    border: 1px solid var(--theme-border);
+    background: var(--theme-bg-elevated);
+    color: var(--theme-text-primary);
+    font: inherit;
+  }
+  .review-sort-control select:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+  @media (max-width: 640px) {
+    .review-list-header {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+</style>

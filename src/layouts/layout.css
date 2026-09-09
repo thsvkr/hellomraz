@@ -9,6 +9,26 @@ body {
   color: var(--theme-text-primary, #ECEFF4);
 }
 
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100001;
+  transform: translateY(-200%);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--theme-accent);
+  background: var(--theme-bg-surface);
+  color: var(--theme-text-primary);
+  text-decoration: none;
+  transition: transform 0.15s;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--theme-accent);
+  outline-offset: 3px;
+}
+
 body.mobile-sidebar-open {
   overflow: hidden;
 }
@@ -35,6 +55,16 @@ body.mobile-sidebar-open {
 .app-shell {
   height: 100vh;
   height: 100dvh;
+  overflow: hidden;
+}
+
+.app-main {
+  width: 100%;
+  max-width: 1600px;
+  margin-inline: auto;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* ── Mobile sidebar overlay ── */
@@ -95,6 +125,23 @@ body.mobile-sidebar-open {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+}
+
+@media (max-width: 1023px) {
+  body {
+    overflow: auto;
+  }
+
+  .app-shell {
+    min-height: 100dvh;
+    height: auto;
+    overflow: visible;
+  }
+
+  .app-main {
+    max-width: none;
+    overflow: visible;
+  }
 }
 
 @media (min-width: 1024px) {

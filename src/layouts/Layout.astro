@@ -32,6 +32,17 @@ const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
 const rssFeedUrl = new URL(`${base}rss.xml`, siteUrl).toString();
 const ogImage = image || `${siteUrl}${base}og-default.png`;
 const fullTitle = `${title} | poeba.lu`;
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE_TITLE,
+  url: siteUrl,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${siteUrl}${base}search?q={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
+};
 
 const [recentPosts, totalPosts] = await Promise.all([
   getRecentPosts(SIDEBAR_INITIAL_POSTS),
@@ -91,6 +102,7 @@ const lightThemeIds = [
       href={rssFeedUrl}
     />
     <meta name="generator" content={Astro.generator} />
+    <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)}></script>
     <title>{fullTitle}</title>
     <meta name="base-url" content={base} />
 
@@ -146,11 +158,34 @@ const lightThemeIds = [
         });
       })();
     </script>
-    <!-- Umami Analytics -->
-    <script defer src="https://cloud.umami.is/script.js" data-website-id="c50bec21-a36c-4762-92ce-7335a35a4060"></script>
+    <!-- Analytics loads after first interaction or idle time in production. -->
+    <script>
+      if (import.meta.env.PROD) {
+        let analyticsLoaded = false;
+        const loadAnalytics = () => {
+          if (analyticsLoaded) return;
+          analyticsLoaded = true;
+          const script = document.createElement('script');
+          script.defer = true;
+          script.src = 'https://cloud.umami.is/script.js';
+          script.dataset.websiteId = 'c50bec21-a36c-4762-92ce-7335a35a4060';
+          document.head.appendChild(script);
+        };
+        const scheduleAnalytics = () => loadAnalytics();
+        window.addEventListener('scroll', scheduleAnalytics, { once: true, passive: true });
+        window.addEventListener('pointerdown', scheduleAnalytics, { once: true, passive: true });
+        window.addEventListener('keydown', scheduleAnalytics, { once: true });
+        if ('requestIdleCallback' in window) {
+          window.requestIdleCallback(loadAnalytics, { timeout: 5000 });
+        } else {
+          window.setTimeout(loadAnalytics, 5000);
+        }
+      }
+    </script>
   </head>
   <body>
-    <div class="app-shell flex items-stretch overflow-hidden theme-base">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="app-shell flex items-stretch theme-base">
       <!-- Mobile sidebar overlay -->
       <div
         id="mobile-sidebar-overlay"
@@ -158,7 +193,12 @@ const lightThemeIds = [
         aria-hidden="true"
       >
         <div class="mobile-sidebar-backdrop"></div>
-        <div class="mobile-sidebar-panel">
+        <div
+          class="mobile-sidebar-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Site menu"
+        >
           <div class="mobile-sidebar-header">
             <button
               id="mobile-sidebar-close"
@@ -180,9 +220,9 @@ const lightThemeIds = [
         <SideMenu initialPosts={recentPosts} hasMore={hasMoreRecentPosts} />
       </div>
       <!-- Main content -->
-      <div class="flex-1 overflow-y-auto overflow-x-hidden theme-surface">
+      <main id="main-content" class="app-main flex-1 min-w-0 theme-surface" tabindex="-1">
         <slot />
-      </div>
+      </main>
     </div>
 
     <FloatingPlayerDock />
@@ -311,7 +351,10 @@ const lightThemeIds = [
       type MobileSidebarWindow = Window & {
         __mobileSidebarKeydownBound?: boolean;
         __mobileSidebarInitBound?: boolean;
+        __mobileSidebarReturnFocus?: HTMLElement | null;
       };
+
+      const mobileSidebarWindow = window as MobileSidebarWindow;
 
       function closeMobileSidebar() {
         const overlay = document.getElementById('mobile-sidebar-overlay');
@@ -320,6 +363,8 @@ const lightThemeIds = [
         overlay.classList.remove('open');
         overlay.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('mobile-sidebar-open');
+        mobileSidebarWindow.__mobileSidebarReturnFocus?.focus();
+        mobileSidebarWindow.__mobileSidebarReturnFocus = null;
       }
 
       function initMobileSidebar() {
@@ -327,9 +372,11 @@ const lightThemeIds = [
         if (!overlay) return;
 
         function open() {
+          mobileSidebarWindow.__mobileSidebarReturnFocus = document.activeElement as HTMLElement | null;
           overlay.classList.add('open');
           overlay.setAttribute('aria-hidden', 'false');
           document.body.classList.add('mobile-sidebar-open');
+          overlay.querySelector<HTMLElement>('#mobile-sidebar-close')?.focus();
         }
 
         // Always re-bind: the button may be persisted but overlay is fresh
@@ -344,14 +391,30 @@ const lightThemeIds = [
         if (backdrop) (backdrop as HTMLElement).onclick = closeMobileSidebar;
 
         if (!(window as MobileSidebarWindow).__mobileSidebarKeydownBound) {
-          (window as MobileSidebarWindow).__mobileSidebarKeydownBound = true;
+          mobileSidebarWindow.__mobileSidebarKeydownBound = true;
           document.addEventListener('keydown', (event) => {
             const currentOverlay = document.getElementById('mobile-sidebar-overlay');
-            if (
-              event.key === 'Escape' &&
-              currentOverlay?.classList.contains('open')
-            ) {
+            if (!currentOverlay?.classList.contains('open')) return;
+
+            if (event.key === 'Escape') {
               closeMobileSidebar();
+              return;
+            }
+
+            if (event.key !== 'Tab') return;
+            const focusable = Array.from(
+              currentOverlay.querySelectorAll<HTMLElement>('button, a, input, select, [tabindex]:not([tabindex="-1"])'),
+            ).filter((element) => !element.hasAttribute('disabled'));
+            if (!focusable.length) return;
+
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+              event.preventDefault();
+              last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+              event.preventDefault();
+              first.focus();
             }
           });
         }
