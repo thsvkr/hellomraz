@@ -37,7 +37,31 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
     aria-label="Random album"
     title="Random album"
   >
-    🎲🎲
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-6 w-6"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      stroke="none"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <!-- Angled die, drawn first so the upright one overlaps it. -->
+      <g transform="rotate(-18 15.3 8.8)">
+        <rect x="9.3" y="2.8" width="12" height="12" rx="2.7"></rect>
+        <g class="dice-pip">
+          <circle cx="12.4" cy="5.9" r="1.3"></circle>
+          <circle cx="18.2" cy="11.7" r="1.3"></circle>
+        </g>
+      </g>
+      <!-- Upright die in front; its stroke carves the gap that separates the two. -->
+      <rect class="dice-front" x="1.8" y="9.7" width="12.5" height="12.5" rx="2.8"></rect>
+      <g class="dice-pip">
+        <circle cx="5" cy="12.9" r="1.3"></circle>
+        <circle cx="8.05" cy="15.95" r="1.3"></circle>
+        <circle cx="11.1" cy="19" r="1.3"></circle>
+      </g>
+    </svg>
   </button>
 
   <div id="header-search-results" class="header-search-results" hidden></div>
