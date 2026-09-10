@@ -89,3 +89,35 @@ test("search result labels keep distinct secondary text", () => {
     "Turnstile - GLOW ON [deluxe]",
   );
 });
+
+test("pickRandomEntry never returns the excluded slug", () => {
+  const excludeSlug = "drug-church-prude";
+
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const picked = pickRandomEntry(entries, { excludeSlug });
+    assert.ok(picked, "expected a pick");
+    assert.notEqual(picked.slug, excludeSlug);
+  }
+});
+
+test("pickRandomEntry skips the excluded slug even when the index points at it", () => {
+  // 0.5 lands on index 2 of all four entries — the excluded one — so this
+  // pick would return it if the exclusion were not applied. Across the three
+  // remaining candidates the same value lands on index 1, Angel Du$t.
+  const picked = pickRandomEntry(entries, {
+    excludeSlug: "drug-church-prude",
+    random: () => 0.5,
+  });
+
+  assert.equal(picked?.slug, "angel-dust-brand-new-soul");
+});
+
+test("pickRandomEntry falls back to the excluded slug when it is the only entry", () => {
+  const only = [{ slug: "drug-church-prude", title: "Drug Church - PRUDE" }];
+
+  assert.equal(
+    pickRandomEntry(only, { excludeSlug: "drug-church-prude" })?.slug,
+    "drug-church-prude",
+  );
+});
+
