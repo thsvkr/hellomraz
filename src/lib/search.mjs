@@ -174,3 +174,27 @@ export function searchEntries(entries, query, limit = 8) {
     .slice(0, limit)
     .map((item) => item.entry);
 }
+
+/**
+ * Pick a random entry, preferring one that is not the given slug
+ * so "random" never lands on the page you are already reading.
+ *
+ * @param {RawSearchEntry[]} entries
+ * @param {{ excludeSlug?: string; random?: () => number }} [options]
+ * @returns {RawSearchEntry | null}
+ */
+export function pickRandomEntry(entries, options = {}) {
+  const { excludeSlug = "", random = Math.random } = options;
+
+  /** @type {RawSearchEntry[]} */
+  const pool = (entries ?? [])
+    .filter((entry) => entry?.slug)
+    .filter(
+      (entry, _index, valid) =>
+        // Drop the excluded slug, unless it is all we have.
+        entry.slug !== excludeSlug ||
+        valid.every((other) => other.slug === excludeSlug),
+    );
+
+  return pool[Math.floor(random() * pool.length)] ?? null;
+}
