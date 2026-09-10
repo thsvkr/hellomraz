@@ -198,3 +198,20 @@ export function pickRandomEntry(entries, options = {}) {
 
   return pool[Math.floor(random() * pool.length)] ?? null;
 }
+
+/**
+ * Read the review slug out of a blog post URL, so "random" knows which
+ * entry to exclude. Returns "" for any page that is not a review.
+ *
+ * @param {string | null | undefined} pathname
+ * @param {string} [base]
+ * @returns {string}
+ */
+export function getPostSlugFromPath(pathname, base = "/") {
+  const prefix = `${String(base || "/").replace(/\/?$/, "/")}blog/`;
+  const path = String(pathname ?? "");
+
+  if (!path.startsWith(prefix)) return "";
+
+  return path.slice(prefix.length).replace(/\/+$/, "");
+}

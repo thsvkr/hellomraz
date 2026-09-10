@@ -2,9 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  getPostSlugFromPath,
   getSearchResultPrimaryLabel,
   getSearchResultSecondaryLabel,
   normalizeSearchText,
+  pickRandomEntry,
   prepareSearchEntries,
   searchEntries,
 } from "../src/lib/search.mjs";
@@ -121,3 +123,31 @@ test("pickRandomEntry falls back to the excluded slug when it is the only entry"
   );
 });
 
+test("getPostSlugFromPath reads the slug off a review URL", () => {
+  assert.equal(getPostSlugFromPath("/blog/drug-church-prude"), "drug-church-prude");
+  // Astro serves posts as directories, so the trailing slash has to survive.
+  assert.equal(
+    getPostSlugFromPath("/blog/drug-church-prude/"),
+    "drug-church-prude",
+  );
+});
+
+test("getPostSlugFromPath honors the deployed base path", () => {
+  assert.equal(
+    getPostSlugFromPath("/hellomraz/blog/drug-church-prude/", "/hellomraz/"),
+    "drug-church-prude",
+  );
+  // Same base without the trailing slash the caller may have trimmed.
+  assert.equal(
+    getPostSlugFromPath("/hellomraz/blog/drug-church-prude", "/hellomraz"),
+    "drug-church-prude",
+  );
+});
+
+test("getPostSlugFromPath returns nothing outside review pages", () => {
+  for (const path of ["/", "/blog", "/blog/", "/tags/punk", "/search"]) {
+    assert.equal(getPostSlugFromPath(path), "", `expected no slug for ${path}`);
+  }
+  // A base mismatch must not be mistaken for a review either.
+  assert.equal(getPostSlugFromPath("/blog/drug-church-prude", "/hellomraz/"), "");
+});

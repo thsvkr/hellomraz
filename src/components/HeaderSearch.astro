@@ -70,8 +70,10 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
 <script>
   import { createFloatingDropdown } from "../lib/floating-dropdown.mjs";
   import {
+    getPostSlugFromPath,
     getSearchResultPrimaryLabel,
     getSearchResultSecondaryLabel,
+    pickRandomEntry,
     prepareSearchEntries,
     searchEntries,
   } from "../lib/search.mjs";
@@ -217,8 +219,11 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
     const resultsEl = root.querySelector(
       ".header-search-results",
     ) as HTMLElement | null;
+    const randomBtn = root.querySelector(
+      ".header-search-random",
+    ) as HTMLButtonElement | null;
 
-    if (!form || !fieldEl || !input || !clearBtn || !resultsEl) return;
+    if (!form || !fieldEl || !input || !clearBtn || !resultsEl ||!randomBtn) return;
 
     root.__headerSearchBound = true;
 
@@ -417,13 +422,13 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
       input.focus();
     });
 
-    randomBtn?.addEventListener("click", async () => {
+    randomBtn.addEventListener("click", async () => {
       randomBtn.disabled = true;
 
       try {
         const entries = await loadSearchIndex(base);
         const pick = pickRandomEntry(entries, {
-          excludeSlug: getCurrentPostSlug(base),
+          excludeSlug: getPostSlugFromPath(window.location.pathname, base),
         });
         if (pick) {
           resetSearch();
@@ -472,9 +477,17 @@ const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
   }
   .header-search-random {
     flex: 0 0 auto;
-    /* Rounded to match the input it sits against, not the square header controls. */
     border-radius: 0.375rem;
-    font-size: 0.875rem;
+    justify-content: center;
+    padding: 0.5rem;
+    min-width: 44px;
+  }
+  .header-search-random .dice-pip {
+    fill: var(--theme-bg-elevated);
+  }
+  .header-search-random .dice-front {
+    stroke: var(--theme-bg-elevated);
+    stroke-width: 2;
   }
   .header-search-field {
     position: relative;
